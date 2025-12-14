@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Káva v Obyváku - Anet, Ondra & Sunny</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>☕ Káva v Obyváku</h1>
+            <p class="subtitle">Anet, Ondra & Sunny</p>
+            <button id="baristaLoginBtn" class="barista-btn">Přihlásit baristu</button>
+        </header>
+
+        <!-- Barista Login Modal -->
+        <div id="baristaModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Přihlášení baristy</h2>
+                <form id="baristaLoginForm">
+                    <div class="form-group">
+                        <label for="baristaName">Jméno:</label>
+                        <input type="text" id="baristaName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="baristaPassword">Heslo:</label>
+                        <input type="password" id="baristaPassword" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Přihlásit</button>
+                    <p id="loginError" class="error-message"></p>
+                </form>
+            </div>
+        </div>
+
+        <!-- Barista View -->
+        <div id="baristaView" class="barista-view" style="display: none;">
+            <h2>Přehled objednávek</h2>
+            <div id="baristaOrders"></div>
+            <button id="logoutBtn" class="btn-secondary">Odhlásit se</button>
+        </div>
+
+        <!-- Customer View -->
+        <div id="customerView">
+            <form id="orderForm">
+                <div class="form-group">
+                    <label for="customerName">Vaše jméno:</label>
+                    <input type="text" id="customerName" required placeholder="Zadejte vaše jméno">
+                </div>
+
+                <div class="form-group">
+                    <label>Vyberte kávu:</label>
+                    <div class="coffee-grid">
+                        <label class="coffee-option">
+                            <input type="radio" name="coffee" value="Latte Macchiato" required>
+                            <span>Latte Macchiato</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="radio" name="coffee" value="Cappuccino" required>
+                            <span>Cappuccino</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="radio" name="coffee" value="Flat White" required>
+                            <span>Flat White</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="radio" name="coffee" value="Lungo" required>
+                            <span>Lungo</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="radio" name="coffee" value="Logr" required>
+                            <span>Logr</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="radio" name="coffee" value="Rozpustná káva" required>
+                            <span>Rozpustná káva</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="radio" name="coffee" value="Čaj" required>
+                            <span>Čaj</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="radio" name="coffee" value="Espresso" required>
+                            <span>Espresso</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Mléko:</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="milk" value="s mlékem" required>
+                            <span>S mlékem</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="milk" value="bez mléka" required>
+                            <span>Bez mléka</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="sugar">Počet lžiček cukru:</label>
+                    <input type="number" id="sugar" min="0" max="10" value="0" required>
+                </div>
+
+                <button type="submit" class="btn-primary btn-large">Objednat</button>
+            </form>
+
+            <div id="ordersList" class="orders-list">
+                <h2>Aktuální objednávky</h2>
+                <div id="ordersContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
