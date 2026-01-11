@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "buildCommand": "echo 'No build required'",
+  "outputDirectory": "public",
+  "framework": null,
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    }
+  ]
+}
+

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Káva v obýváku</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>☕ Káva v obýváku</h1>
+            <button id="baristaLoginBtn" class="barista-btn">Přihlásit baristu</button>
+        </header>
+
+        <!-- Barista Login Modal -->
+        <div id="baristaModal" class="modal">
+            <div class="modal-content">
+                <span class="close" id="closeLogin">&times;</span>
+                <h2>Přihlášení baristy</h2>
+                <form id="baristaLoginForm">
+                    <div class="form-group">
+                        <label for="baristaName">Jméno:</label>
+                        <input type="text" id="baristaName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="baristaPassword">Heslo:</label>
+                        <input type="password" id="baristaPassword" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Přihlásit</button>
+                    <p id="loginError" class="error-message"></p>
+                </form>
+            </div>
+        </div>
+
+        <!-- Change Password Modal -->
+        <div id="changePasswordModal" class="modal">
+            <div class="modal-content">
+                <span class="close" id="closePassword">&times;</span>
+                <h2>Změna hesla</h2>
+                <p style="margin-bottom: 20px; color: #666;">Pro zvýšení bezpečnosti si prosím nastavte nové heslo.</p>
+                <form id="changePasswordForm">
+                    <div class="form-group">
+                        <label for="oldPasswordChange">Aktuální heslo:</label>
+                        <input type="password" id="oldPasswordChange" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">Nové heslo:</label>
+                        <input type="password" id="newPassword" required minlength="4">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Potvrzení hesla:</label>
+                        <input type="password" id="confirmPassword" required minlength="4">
+                    </div>
+                    <button type="submit" class="btn-primary">Změnit heslo</button>
+                    <p id="passwordError" class="error-message"></p>
+                </form>
+            </div>
+        </div>
+
+        <!-- Barista View -->
+        <div id="baristaView" class="barista-view" style="display: none;">
+            <div class="barista-header">
+                <h2>Přehled objednávek</h2>
+                <button id="toggleHistoryBtn" class="btn-toggle">Zobrazit historii</button>
+            </div>
+            
+            <div id="baristaOrders"></div>
+            
+            <div id="baristaHistory" style="display: none;">
+                <h3 style="margin-top: 30px; margin-bottom: 15px; color: #555;">Historie objednávek</h3>
+                <div id="baristaHistoryContainer"></div>
+            </div>
+            
+            <button id="logoutBtn" class="btn-secondary">Odhlásit se</button>
+        </div>
+
+        <!-- Customer View -->
+        <div id="customerView">
+            <form id="orderForm">
+                <div class="form-group">
+                    <label for="customerName">Vaše jméno:</label>
+                    <input type="text" id="customerName" required placeholder="Zadejte vaše jméno">
+                </div>
+
+                <div class="form-group">
+                    <label>Vyberte nápoje (můžete vybrat více):</label>
+                    <div class="coffee-grid">
+                        <label class="coffee-option">
+                            <input type="checkbox" name="drinks" value="Latte Macchiato" data-no-milk="true">
+                            <div class="coffee-image">☕</div>
+                            <span>Latte Macchiato</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="checkbox" name="drinks" value="Cappuccino" data-no-milk="true">
+                            <div class="coffee-image">☕</div>
+                            <span>Cappuccino</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="checkbox" name="drinks" value="Café au Lait">
+                            <div class="coffee-image">☕</div>
+                            <span>Café au Lait</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="checkbox" name="drinks" value="Cortado">
+                            <div class="coffee-image">☕</div>
+                            <span>Cortado</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="checkbox" name="drinks" value="Chococino" data-no-milk="true">
+                            <div class="coffee-image">☕</div>
+                            <span>Chococino</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="checkbox" name="drinks" value="Flat White">
+                            <div class="coffee-image">☕</div>
+                            <span>Flat White</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="checkbox" name="drinks" value="Lungo">
+                            <div class="coffee-image">☕</div>
+                            <span>Lungo</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="checkbox" name="drinks" value="Logr">
+                            <div class="coffee-image">☕</div>
+                            <span>Logr</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="checkbox" name="drinks" value="Rozpustná káva">
+                            <div class="coffee-image">☕</div>
+                            <span>Rozpustná káva</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="checkbox" name="drinks" value="Čaj">
+                            <div class="coffee-image">🫖</div>
+                            <span>Čaj</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="checkbox" name="drinks" value="Espresso">
+                            <div class="coffee-image">☕</div>
+                            <span>Espresso</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="checkbox" name="drinks" value="Pivo" data-no-milk="true">
+                            <div class="coffee-image">🍺</div>
+                            <span>Pivo</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="checkbox" name="drinks" value="Nealko pivo" data-no-milk="true">
+                            <div class="coffee-image">🍺</div>
+                            <span>Nealko pivo</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="checkbox" name="drinks" value="Šťáva" data-no-milk="true">
+                            <div class="coffee-image">🥤</div>
+                            <span>Šťáva</span>
+                        </label>
+                        <label class="coffee-option">
+                            <input type="checkbox" name="drinks" value="Voda 0,5l" data-no-milk="true">
+                            <div class="coffee-image">💧</div>
+                            <span>Voda 0,5l</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group" id="milkGroup" style="display: none;">
+                    <label>Mléko:</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="milk" value="s mlékem">
+                            <span>S mlékem</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="milk" value="bez mléka">
+                            <span>Bez mléka</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="sugar">Počet lžiček cukru:</label>
+                    <input type="number" id="sugar" min="0" max="10" value="0" required>
+                </div>
+
+                <button type="submit" class="btn-primary btn-large">Objednat</button>
+            </form>
+
+            <div id="ordersList" class="orders-list">
+                <h2>Aktuální objednávky</h2>
+                <div id="ordersContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confetti Modal -->
+    <div id="confettiModal" class="modal" style="display: none;">
+        <div class="confetti-content">
+            <div id="confettiMessage" class="confetti-message"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
