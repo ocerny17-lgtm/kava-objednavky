@@ -1,7 +1,18 @@
 // Orders API – Upstash Redis (náhrada zrušeného Vercel KV)
 import { Redis } from '@upstash/redis';
 
-const redis = Redis.fromEnv();
+function createRedis() {
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+  if (!url || !token) {
+    throw new Error(
+      'Redis není nastavený. Ve Vercelu připoj Storage (Upstash Redis) k projektu a udělej Redeploy.'
+    );
+  }
+  return new Redis({ url, token });
+}
+
+const redis = createRedis();
 const ORDERS_KEY = 'orders';
 
 async function getOrders() {
