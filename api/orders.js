@@ -1,4 +1,4 @@
-// Orders API – Upstash Redis (náhrada zrušeného Vercel KV)
+// Orders API – Upstash Redis (atomické ukládání, bezpečné při souběhu)
 import { Redis } from '@upstash/redis';
 
 function createRedis() {
@@ -13,16 +13,40 @@ function createRedis() {
 }
 
 const redis = createRedis();
-const ORDERS_KEY = 'orders';
+const ORDER_IDS = 'coffee:order-ids';
+const orderKey = (id) => `coffee:order:${id}`;
 
-async function getOrders() {
-  const orders = await redis.get(ORDERS_KEY);
-  return Array.isArray(orders) ? orders : [];
+async function migrateLegacyOrdersIfNeeded() {
+  const existing = await redis.zcard(ORDER_IDS);
+  if (existing > 0) return;
+
+  const legacy = await redis.get('orders');
+  if (!Array.isArray(legacy) || !legacy.length) return;
+
+  for (const order of legacy) {
+    if (order?.id == null) continue;
+    await saveOrder(order);
+  }
+  await redis.del('orders');
 }
 
-async function saveOrders(orders) {
-  await redis.set(ORDERS_KEY, orders);
-  return true;
+async function loadAllOrders() {
+  await migrateLegacyOrdersIfNeeded();
+
+  const ids = await redis.zrange(ORDER_IDS, 0, -1);
+  if (!ids.length) return [];
+
+  const pipeline = redis.pipeline();
+  for (const id of ids) pipeline.get(orderKey(id));
+  const rows = await pipeline.exec();
+  return rows.filter(Boolean);
+}
+
+async function saveOrder(order) {
+  const id = String(order.id);
+  const score = Number(order.id) || Date.now();
+  await redis.set(orderKey(id), order);
+  await redis.zadd(ORDER_IDS, { score, member: id });
 }
 
 export default async function handler(req, res) {
@@ -38,50 +62,35 @@ export default async function handler(req, res) {
 
   try {
     if (action === 'get') {
-      const orders = await getOrders();
+      const orders = await loadAllOrders();
       const now = new Date();
+      const toComplete = [];
 
-      // Zákazníci vidí objednávky ještě 5 minut po označení jako odnášené
       const activeOrders = orders.filter((order) => {
         if (order.status === 'completed') return false;
         if (order.status === 'delivering' && order.deliveringAt) {
-          const deliveringTime = new Date(order.deliveringAt);
-          const secondsAgo = (now - deliveringTime) / 1000;
+          const secondsAgo = (now - new Date(order.deliveringAt)) / 1000;
           if (secondsAgo > 300) {
-            order.status = 'completed';
-            order.completedAt = new Date().toISOString();
+            toComplete.push({
+              ...order,
+              status: 'completed',
+              completedAt: new Date().toISOString(),
+            });
             return false;
           }
         }
         return true;
       });
 
-      let needsUpdate = false;
-      const cleanedOrders = orders.map((order) => {
-        if (order.status === 'delivering' && order.deliveringAt) {
-          const deliveringTime = new Date(order.deliveringAt);
-          const secondsAgo = (now - deliveringTime) / 1000;
-          if (secondsAgo > 300) {
-            needsUpdate = true;
-            return {
-              ...order,
-              status: 'completed',
-              completedAt: new Date().toISOString(),
-            };
-          }
-        }
-        return order;
-      });
-
-      if (needsUpdate) {
-        await saveOrders(cleanedOrders);
+      for (const order of toComplete) {
+        await saveOrder(order);
       }
 
       return res.status(200).json({ success: true, orders: activeOrders });
     }
 
     if (action === 'getHistory') {
-      const orders = await getOrders();
+      const orders = await loadAllOrders();
       const completedOrders = orders
         .filter((order) => order.status === 'completed')
         .sort((a, b) => {
@@ -95,21 +104,18 @@ export default async function handler(req, res) {
     }
 
     if (action === 'create') {
-      const { order } = req.body;
-      if (!order) {
+      const { order } = req.body || {};
+      if (!order || order.id == null) {
         return res.status(400).json({ success: false, error: 'Chybí data objednávky' });
       }
 
-      const orders = await getOrders();
-      orders.push(order);
-      await saveOrders(orders);
-
+      // Každá objednávka = vlastní klíč → souběžné create se nepřepisují
+      await saveOrder(order);
       return res.status(200).json({ success: true });
     }
 
     if (action === 'accept') {
-      const { orderId, barista } = req.body;
-
+      const { orderId, barista } = req.body || {};
       if (!orderId || !barista) {
         return res.status(400).json({
           success: false,
@@ -117,80 +123,66 @@ export default async function handler(req, res) {
         });
       }
 
-      const orders = await getOrders();
-      const orderIndex = orders.findIndex((o) => o.id == orderId);
-
-      if (orderIndex === -1 || orders[orderIndex].status !== 'pending') {
+      const order = await redis.get(orderKey(orderId));
+      if (!order || order.status !== 'pending') {
         return res.status(400).json({
           success: false,
           error: 'Objednávka nebyla nalezena nebo již byla přijata',
         });
       }
 
-      orders[orderIndex].status = 'in-progress';
-      orders[orderIndex].barista = barista;
-      orders[orderIndex].acceptedAt = new Date().toISOString();
-
-      await saveOrders(orders);
+      order.status = 'in-progress';
+      order.barista = barista;
+      order.acceptedAt = new Date().toISOString();
+      await saveOrder(order);
       return res.status(200).json({ success: true });
     }
 
     if (action === 'deliver') {
-      const { orderId } = req.body;
-
+      const { orderId } = req.body || {};
       if (!orderId) {
         return res.status(400).json({ success: false, error: 'Chybí ID objednávky' });
       }
 
-      const orders = await getOrders();
-      const orderIndex = orders.findIndex((o) => o.id == orderId);
-
-      if (orderIndex === -1) {
+      const order = await redis.get(orderKey(orderId));
+      if (!order) {
         return res.status(400).json({ success: false, error: 'Objednávka nebyla nalezena' });
       }
 
-      orders[orderIndex].status = 'delivering';
-      orders[orderIndex].deliveringAt = new Date().toISOString();
-
-      await saveOrders(orders);
+      order.status = 'delivering';
+      order.deliveringAt = new Date().toISOString();
+      await saveOrder(order);
       return res.status(200).json({ success: true });
     }
 
     if (action === 'complete') {
-      const { orderId } = req.body;
-
+      const { orderId } = req.body || {};
       if (!orderId) {
         return res.status(400).json({ success: false, error: 'Chybí ID objednávky' });
       }
 
-      const orders = await getOrders();
-      const orderIndex = orders.findIndex((o) => o.id == orderId);
-
-      if (orderIndex === -1) {
+      const order = await redis.get(orderKey(orderId));
+      if (!order) {
         return res.status(400).json({ success: false, error: 'Objednávka nebyla nalezena' });
       }
 
-      orders[orderIndex].status = 'completed';
-      orders[orderIndex].completedAt = new Date().toISOString();
-
-      await saveOrders(orders);
+      order.status = 'completed';
+      order.completedAt = new Date().toISOString();
+      await saveOrder(order);
       return res.status(200).json({ success: true });
     }
 
     if (action === 'delete') {
-      const { orderId } = req.body;
-
+      const { orderId } = req.body || {};
       if (!orderId) {
         return res.status(400).json({ success: false, error: 'Chybí ID objednávky' });
       }
 
-      const orders = await getOrders();
-      const orderIndex = orders.findIndex((o) => o.id == orderId);
-
-      if (orderIndex !== -1) {
-        orders[orderIndex].status = 'completed';
-        orders[orderIndex].completedAt = new Date().toISOString();
-        await saveOrders(orders);
+      const order = await redis.get(orderKey(orderId));
+      if (order) {
+        order.status = 'completed';
+        order.completedAt = new Date().toISOString();
+        await saveOrder(order);
       }
 
       return res.status(200).json({ success: true });
