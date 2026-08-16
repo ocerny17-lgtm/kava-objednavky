@@ -1,30 +1,46 @@
-// Vercel Serverless Function for password management
-// Using simple in-memory storage (for production, use Vercel KV or database)
-let passwordsStorage = {
-  'Josef': {
-    password: '1429', // Initial password
-    mustChange: true  // Must change password on first login
+// Passwords API – Upstash Redis
+import { Redis } from '@upstash/redis';
+
+const redis = Redis.fromEnv();
+const PASSWORDS_KEY = 'passwords';
+
+const DEFAULT_PASSWORDS = {
+  Josef: {
+    password: '1429',
+    mustChange: true,
   },
-  'Týna': {
-    password: '1429', // Initial password
-    mustChange: true  // Must change password on first login
+  Týna: {
+    password: '1429',
+    mustChange: true,
   },
-  'Sunny': {
+  Sunny: {
     password: '1711',
-    mustChange: false
+    mustChange: false,
   },
-  'Ondrej': {
+  Ondrej: {
     password: '1711',
-    mustChange: false
+    mustChange: false,
   },
-  'Anet': {
+  Anet: {
     password: 'Sunny',
-    mustChange: false
-  }
+    mustChange: false,
+  },
 };
 
+async function getPasswords() {
+  const stored = await redis.get(PASSWORDS_KEY);
+  if (stored && typeof stored === 'object') {
+    return stored;
+  }
+  await redis.set(PASSWORDS_KEY, DEFAULT_PASSWORDS);
+  return { ...DEFAULT_PASSWORDS };
+}
+
+async function savePasswords(passwords) {
+  await redis.set(PASSWORDS_KEY, passwords);
+}
+
 export default async function handler(req, res) {
-  // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -33,20 +49,19 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // Get action from query (GET) or body (POST)
   const action = req.method === 'GET' ? req.query.action : req.body?.action;
 
   try {
     if (action === 'check') {
-      // Check password
-      const { name, password } = req.body;
-      
+      const { name, password } = req.body || {};
+
       if (!name || !password) {
         return res.status(400).json({ success: false, error: 'Chybí jméno nebo heslo' });
       }
 
-      const user = passwordsStorage[name];
-      
+      const passwords = await getPasswords();
+      const user = passwords[name];
+
       if (!user) {
         return res.status(401).json({ success: false, error: 'Uživatel nenalezen' });
       }
@@ -55,37 +70,43 @@ export default async function handler(req, res) {
         return res.status(401).json({ success: false, error: 'Nesprávné heslo' });
       }
 
-      return res.status(200).json({ 
-        success: true, 
-        mustChangePassword: user.mustChange 
+      return res.status(200).json({
+        success: true,
+        mustChangePassword: user.mustChange,
       });
     }
 
     if (action === 'change') {
-      // Change password
-      const { name, oldPassword, newPassword } = req.body;
-      
+      const { name, oldPassword, newPassword } = req.body || {};
+
       if (!name || !oldPassword || !newPassword) {
         return res.status(400).json({ success: false, error: 'Chybí potřebná data' });
       }
 
       if (newPassword.length < 4) {
-        return res.status(400).json({ success: false, error: 'Heslo musí mít alespoň 4 znaky' });
+        return res.status(400).json({
+          success: false,
+          error: 'Heslo musí mít alespoň 4 znaky',
+        });
       }
 
-      const user = passwordsStorage[name];
-      
+      const passwords = await getPasswords();
+      const user = passwords[name];
+
       if (!user) {
         return res.status(401).json({ success: false, error: 'Uživatel nenalezen' });
       }
 
       if (user.password !== oldPassword) {
-        return res.status(401).json({ success: false, error: 'Nesprávné aktuální heslo' });
+        return res.status(401).json({
+          success: false,
+          error: 'Nesprávné aktuální heslo',
+        });
       }
 
-      // Update password
-      passwordsStorage[name].password = newPassword;
-      passwordsStorage[name].mustChange = false;
+      passwords[name].password = newPassword;
+      passwords[name].mustChange = false;
+      await savePasswords(passwords);
 
       return res.status(200).json({ success: true });
     }
@@ -93,7 +114,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ success: false, error: 'Neznámá akce' });
   } catch (error) {
     console.error('API Error:', error);
-    return res.status(500).json({ success: false, error: 'Server error: ' + error.message });
+    return res.status(500).json({
+      success: false,
+      error: 'Server error: ' + error.message,
+    });
   }
 }
-

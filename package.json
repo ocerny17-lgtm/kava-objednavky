@@ -1,17 +1,16 @@
 {
   "name": "kava-objednavky",
-  "version": "1.0.0",
-  "description": "Objednávkový systém pro kávu v obyváku",
+  "version": "1.1.0",
+  "description": "Objednávkový systém pro kávu v obýváku",
+  "type": "module",
   "scripts": {
-    "build": "echo 'No build step required'",
-    "vercel-build": "echo 'No build step required'"
+    "build": "echo No build step required",
+    "vercel-build": "echo No build step required"
   },
-  "keywords": ["coffee", "orders", "vercel"],
+  "keywords": ["coffee", "orders", "vercel", "upstash"],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@vercel/kv": "^0.2.1"
-  },
-  "devDependencies": {}
+    "@upstash/redis": "^1.35.0"
+  }
 }
-
