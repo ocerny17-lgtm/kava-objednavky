@@ -1,6 +1,6 @@
-# Káva v Obyváku - Deployment na Vercel
+# Pohoda na chalupě - Deployment na Vercel
 
-Webová aplikace pro objednávání kávy v obyváku u Anet, Ondry a Sunny.
+Webová aplikace pro objednávání kávy na chalupě u Anet, Ondry a Sunny.
 
 ## 🚀 Rychlý start s Vercel
 

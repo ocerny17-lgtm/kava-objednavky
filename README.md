@@ -1,6 +1,6 @@
-# ☕ Káva v Obyváku - Objednávkový systém
+# ☕ Pohoda na chalupě - Objednávkový systém
 
-Webová aplikace pro objednávání kávy v obyváku u Anet, Ondry a Sunny.
+Webová aplikace pro objednávání kávy na chalupě u Anet, Ondry a Sunny.
 
 ## 🚀 Deployment
 

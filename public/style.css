@@ -6,7 +6,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #f4e4d7 0%, #e8d5c4 50%, #d4c4b0 100%);
+    background: #e98f5c url('autumn-bg.svg') center bottom / cover no-repeat fixed;
     min-height: 100vh;
     padding: 20px;
     color: #333;

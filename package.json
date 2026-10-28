@@ -1,7 +1,7 @@
 {
   "name": "kava-objednavky",
   "version": "1.1.0",
-  "description": "Objednávkový systém pro kávu v obýváku",
+  "description": "Objednávkový systém Pohoda na chalupě",
   "type": "module",
   "scripts": {
     "build": "echo No build step required",
